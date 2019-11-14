@@ -1,0 +1,63 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.pyc
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.rar
+#*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log
+*.sqlite
+*.xml
+_windows/
+
+# OS generated files #
+######################
+.DS_Store
+ehthumbs.db
+Icon
+Thumbs.db
+.tmtags
+.idea/
+mydjangosite/.idea/
+tags
+vendor.tags
+tmtagsHistory
+*.sublime-project
+*.sublime-workspace
+.bundle
+
+# AVR studio files #
+####################
+default/
+*.aps
+*.aws
+
+# TrueSTUDIO files #
+####################
+.metadata/*
+cart/*.*
+cart/.setting/*
+cart/Drivers/*
+cart/Middlewares/*
+cart/startup/*
+cart/Inc/*
+!cart/Inc/main.h
+cart/Src/*
+!cart/Src/main.c
