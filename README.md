@@ -1,14 +1,14 @@
-# Github practice using STM32F4 
+# Github Seminar using STM32F4 
 
 ## 1. Development project setup
-* Step 1. Share a CubeMX file
+* Step 1. Share a CubeMX file (Download: https://drive.google.com/file/d/1s1uq5e41L0jN_WBfzcUOEJaODxR29T9p/view?usp=sharing)
 * Step 2. Create "Sandi semina" folder
 * Step 3. Execute the shared CubeMX file
 * Step 4. Save as CubeMX project (Project name: sandi_git) in "Sandi semina" folder
 * Step 5. Click "Generate code" button
 * Step 6. Delete main.h file in "sandi_git/Inc/" and main.c file "sandi_git/Src/"
 * Step 7. Create/init local git repository in "Sandi semina" folder
-* Step 8. Set git origin "https://github.com/icns-distributed-cloud/stm-cartcontroller.git"
+* Step 8. Set git origin "https://github.com/icns-distributed-cloud/Lecture-Github.git"
 * Step 9. Git pull origin master
 
 ## 2. Project development
