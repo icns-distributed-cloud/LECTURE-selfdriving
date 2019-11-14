@@ -52,12 +52,12 @@ default/
 # TrueSTUDIO files #
 ####################
 .metadata/*
-cart/*.*
-cart/.setting/*
-cart/Drivers/*
-cart/Middlewares/*
-cart/startup/*
-cart/Inc/*
-!cart/Inc/main.h
-cart/Src/*
-!cart/Src/main.c
+sandi_git/*.*
+sandi_git/.setting/*
+sandi_git/Drivers/*
+sandi_git/Middlewares/*
+sandi_git/startup/*
+sandi_git/Inc/*
+!sandi_git/Inc/main.h
+sandi_git/Src/*
+!sandi_git/Src/main.c
