@@ -1,7 +1,8 @@
 # Github Seminar using STM32F4 
 
 ## 1. Development project setup
-* Step 1. Share a CubeMX file (Download: https://drive.google.com/file/d/1s1uq5e41L0jN_WBfzcUOEJaODxR29T9p/view?usp=sharing)
+* Step 1. Share a CubeMX file
+(Download: https://drive.google.com/file/d/1s1uq5e41L0jN_WBfzcUOEJaODxR29T9p/view?usp=sharing)
 * Step 2. Create "Sandi semina" folder
 * Step 3. Execute the shared CubeMX file
 * Step 4. Save as CubeMX project (Project name: sandi_git) in "Sandi semina" folder
