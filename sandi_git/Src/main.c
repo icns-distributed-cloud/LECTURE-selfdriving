@@ -54,26 +54,63 @@
 #include "i2c.h"
 #include "i2s.h"
 #include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "usb_host.h"
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <math.h>
+#include <stm32f4xx_hal_gpio.h>
+#include "stm32f4xx_it.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+char Buf1[4];
+char Buf2[4];
+int cntLast;
+char rx;
+char enter1=13;
+char enter2=10;
+char space=32;
+
+/********VELOCITY NORMALIZATION********/
+int W1_MIN = 600;														// Left_Motor Initial Velocity
+int W2_MIN = 600;														// Right_Motor Initial Velocity
+#define RANGE_MAX 60
+int n_v1, n_v2; 												// Normalized Velocity Value
+int norm1,norm2;
+int diff1,diff2;											            // For Normalization
+int diff_w1, diff_w2;
+
+/***************PSD Normalization********************/
+#define PSD_MIN 0
+#define PSD_MAX 900
+#define Default_Speed 600
+uint16_t PSDL[1];
+uint16_t PSDR[1];
+uint16_t SideLPSD = 0;
+uint16_t SideRPSD = 0;
+int PSDdiff1;
+int PSDdiff2;
+uint16_t adcval[2];
+
+/***********FOR DELAY_US FUNC**********/
+#define Delay_ms     HAL_Delay
+#define millis()     HAL_GetTick()
+#define SYS_CLOCK    168
+#define SYSTICK_LOAD 167999
+__IO uint32_t uwTick=0;
+extern __IO uint32_t uwTick;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_NVIC_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
@@ -82,7 +119,74 @@ void MX_USB_HOST_Process(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-bool V=false;
+uint32_t micros() {
+  return (uwTick&0x3FFFFF)*1000 + (SYSTICK_LOAD-SysTick->VAL)/SYS_CLOCK;
+}
+
+void Delay_us(uint32_t us) {
+  uint32_t temp = micros();
+  uint32_t comp = temp + us;
+  uint8_t  flag = 0;
+  while(comp > temp){
+    if(((uwTick&0x3FFFFF)==0)&&(flag==0)){
+      flag = 1;
+    }
+    if(flag) temp = micros() + 0x400000UL * 1000;
+    else     temp = micros();
+  }
+}
+void SCI_OutString(char *pt)
+{
+  char letter;
+  while((letter = *pt++)){
+     HAL_UART_Transmit(&huart3,&letter, 1,10);
+    //SCI_OutChar(letter);
+  }
+}
+void SCI_OutChar(char letter)
+{
+   HAL_UART_Transmit(&huart3,&letter, 1,10);
+}
+void PSD(){
+
+	PSDL[0] = adcval[0];
+	PSDR[0] = adcval[1];
+	if(PSDL[0] > PSD_MAX)
+		PSDL[0] = PSD_MAX;
+	if(PSDR[0] > PSD_MAX)
+		PSDR[0] = PSD_MAX;
+
+	SideLPSD = (float)((PSDL[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;	//PSD Side
+	SideRPSD = (float)((PSDR[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;
+
+	PSDdiff1 = SideLPSD - SideRPSD + Default_Speed;
+	PSDdiff2 = SideRPSD - SideLPSD + Default_Speed;
+
+	if(PSDdiff1 > 1000)
+		PSDdiff1 = 1000;
+	if(PSDdiff2 > 1000)
+		PSDdiff2 = 1000;
+	if(PSDdiff1 < 500)
+		PSDdiff1 = 500;
+	if(PSDdiff2 < 500)
+		PSDdiff2 = 500;
+
+//  	itoa(PSDL[0], Buf1, 10);
+//  	SCI_OutChar('L');
+//  	SCI_OutString(Buf1);
+//  	HAL_UART_Transmit(&huart3,&space,1,10);
+//
+//  	itoa(PSDR[0], Buf2, 10);
+//  	SCI_OutChar('R');
+//  	SCI_OutString(Buf2);
+//
+//  	HAL_UART_Transmit(&huart3,&enter1,1,10);
+//  	HAL_UART_Transmit(&huart3,&enter2,1,10);
+
+	TIM3->CCR1 = PSDdiff1;
+	TIM3->CCR2 = PSDdiff2;
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -93,11 +197,6 @@ bool V=false;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-	volatile uint16_t Val=0;
-	char buf[4]={0};
-	int enter1=13;
-	int enter2=10;
 
   /* USER CODE END 1 */
 
@@ -124,13 +223,28 @@ int main(void)
   MX_I2S3_Init();
   MX_SPI1_Init();
   MX_USB_HOST_Init();
+  MX_TIM3_Init();
+  MX_USART3_UART_Init();
   MX_ADC1_Init();
-  MX_USART2_UART_Init();
-
-  /* Initialize interrupts */
-  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADC_Start_DMA(&hadc1,&Val,1);
+
+  //Initialize for PSD
+
+  HAL_ADC_Start_DMA(&hadc1,&adcval[0],2);
+
+  //Initialize for motor PWN
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+
+  //Initialize for motor direction
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10, SET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_11, RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
+
+  TIM3->CCR1 = 550;
+  TIM3->CCR2 = 550;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -138,18 +252,6 @@ int main(void)
   while (1)
   {
 
-	  HAL_Delay(200);
-	  itoa(Val,buf,10);
-	  HAL_UART_Transmit(&huart2,buf,4,10);
-	  HAL_UART_Transmit(&huart2,enter1,1,10);
-	  HAL_UART_Transmit(&huart2,enter2,1,10);
-
-	  if(V==true){
-		  HAL_GPIO_WritePin(GPIOD,LD4_Pin,GPIO_PIN_SET);
-	  }
-	  else if(V==false){
-	  	  HAL_GPIO_WritePin(GPIOD,LD4_Pin,GPIO_PIN_RESET);
-	  }
   /* USER CODE END WHILE */
     MX_USB_HOST_Process();
 
@@ -226,28 +328,8 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
-/**
-  * @brief NVIC Configuration.
-  * @retval None
-  */
-static void MX_NVIC_Init(void)
-{
-  /* EXTI0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-}
-
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	if(GPIO_Pin==B1_Pin){
-		if(V==true){
-			V=false;
-		}
-		else if(V==false){
-			V=true;
-		}
-	}
-}
+
 /* USER CODE END 4 */
 
 /**

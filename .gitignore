@@ -55,6 +55,7 @@ default/
 sandi_git/*.*
 sandi_git/.setting/*
 sandi_git/Drivers/*
+sandi_git/Debug/*
 sandi_git/Middlewares/*
 sandi_git/startup/*
 sandi_git/Inc/*
