@@ -5,7 +5,8 @@
 (Download: https://drive.google.com/file/d/1s1uq5e41L0jN_WBfzcUOEJaODxR29T9p/view?usp=sharing)
 * Step 2. Create "Sandi semina" folder
 * Step 3. Execute the shared CubeMX file
-* Step 4. Save as CubeMX project (Project name: sandi_git) in "Sandi semina" folder (! folders need to be in order of this, 1. Sandi semina -> 2. sandi_git -> 3. generated codes)
+* Step 4. Save as CubeMX project (Project name: sandi_git) in "Sandi semina" folder (! folders need to be in order of this,
+1. Sandi semina -> 2. sandi_git -> 3. generated codes)
 * Step 5. Click "Generate code" button
 * Step 6. Delete main.h file in "sandi_git/Inc/" and main.c file "sandi_git/Src/"
 * Step 7. Create/init local git repository in "Sandi semina" folder
