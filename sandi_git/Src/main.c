@@ -86,7 +86,8 @@ int n_v1, n_v2; 												// Normalized Velocity Value
 int norm1,norm2;
 int diff1,diff2;											            // For Normalization
 int diff_w1, diff_w2;
-
+int diff;
+int canRun = 0;
 /***************PSD Normalization********************/
 #define PSD_MIN 0
 #define PSD_MAX 900
@@ -159,48 +160,40 @@ void SCI_OutChar(char letter)
    HAL_UART_Transmit(&huart3,&letter, 1,10);
 }
 void PSD(){
-
-	PSDL[0] = adcval[0];
-	PSDR[0] = adcval[1];
+  
+  // Read PSD left and right
+  PSDL[0] = adcval[0];
+	PSDR[0] = adcval[1];  
+	
+  // Threshold mix and max
 	if(PSDL[0] > PSD_MAX)
 		PSDL[0] = PSD_MAX;
 	if(PSDR[0] > PSD_MAX)
 		PSDR[0] = PSD_MAX;
+  
+  // Filtering
+  psd_mean_filter1(); 
+  
+  // Calc difference
+  if(canRun){
+    diff=result_psd1 - result_psd2;
 
-	SideLPSD = (float)((PSDL[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;	//PSD Side
-	SideRPSD = (float)((PSDR[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;
+    // Driving
+    PSDdiff1 = 550 + diff;
+    PSDdiff2 = 550 - diff;
 
-	PSDdiff1 = SideLPSD - SideRPSD + Default_Speed;
-	PSDdiff2 = SideRPSD - SideLPSD + Default_Speed;
+    // Threshold motor input
+    if(PSDdiff1>1000) diff = 1000;
+    else if(PSDdiff1<500) diff = 500;
 
-	if(PSDdiff1 > 1000)
-		PSDdiff1 = 1000;
-	if(PSDdiff2 > 1000)
-		PSDdiff2 = 1000;
-	if(PSDdiff1 < 500)
-		PSDdiff1 = 500;
-	if(PSDdiff2 < 500)
-		PSDdiff2 = 500;
+    if(PSDdiff2>1000) diff = 1000;
+    else if(PSDdiff2<500) diff = 500;
 
-  	itoa(PSDL[0], Buf1, 10);
-  	SCI_OutChar('L');
-  	SCI_OutString(Buf1);
-  	HAL_UART_Transmit(&huart3,&space,1,10);
+    // Input PWM
+    TIM3->CCR1 = PSDdiff1;
+    TIM3->CCR2 = PSDdiff2;
 
-  	itoa(PSDR[0], Buf2, 10);
-  	SCI_OutChar('R');
-  	SCI_OutString(Buf2);
-
-  	HAL_UART_Transmit(&huart3,&enter1,1,10);
-  	HAL_UART_Transmit(&huart3,&enter2,1,10);
-
-	//TIM3->CCR1 = PSDdiff1;
-	//TIM3->CCR2 = PSDdiff2;
-  	psd_mean_filter1();
-
-	TIM3->CCR1 = result_psd1;
-	TIM3->CCR2 = result_psd2;
-
+  }
 }
 
 /* USER CODE END 0 */
@@ -214,18 +207,18 @@ void PSD(){
 void psd_mean_filter1()
 {
 
-	temp_psd1[pc] = PSDdiff1;
-	temp_psd2[pc] = PSDdiff1;
+	temp_psd1[pc] = PSDL[0];
+	temp_psd2[pc] = PSDR[0];
 
 	if(temp_psd1[0] && temp_psd1[1] && temp_psd1[2])
 	{
 		result_psd1 = (temp_psd1[0] + temp_psd1[1] + temp_psd1[2])/3;
 		result_psd2 = (temp_psd2[0] + temp_psd2[1] + temp_psd2[2])/3;
+    canRun = 1;
 	}
 
-	pc++;
-	if(pc >2)
-		pc=0;
+	pc=(pc++)%3;
+	
 
 }
 
@@ -261,6 +254,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USART3_UART_Init();
   MX_ADC1_Init();
+  diff=0;
   /* USER CODE BEGIN 2 */
 
   //Initialize for PSD
@@ -277,8 +271,8 @@ int main(void)
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET);
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
 
-  TIM3->CCR1 = 550;
-  TIM3->CCR2 = 550;
+//   TIM3->CCR1 = 550;
+//   TIM3->CCR2 = 550;
 
   /* USER CODE END 2 */
 
