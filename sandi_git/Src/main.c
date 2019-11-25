@@ -107,6 +107,17 @@ uint16_t adcval[2];
 __IO uint32_t uwTick=0;
 extern __IO uint32_t uwTick;
 
+/**********filter var*****************/
+
+int temp_psd1[3] = {0};
+int temp_psd2[3] = {0};
+
+int result_psd1 = 0;
+int result_psd2 = 0;
+
+unsigned int pc = 0;
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -171,20 +182,25 @@ void PSD(){
 	if(PSDdiff2 < 500)
 		PSDdiff2 = 500;
 
-//  	itoa(PSDL[0], Buf1, 10);
-//  	SCI_OutChar('L');
-//  	SCI_OutString(Buf1);
-//  	HAL_UART_Transmit(&huart3,&space,1,10);
-//
-//  	itoa(PSDR[0], Buf2, 10);
-//  	SCI_OutChar('R');
-//  	SCI_OutString(Buf2);
-//
-//  	HAL_UART_Transmit(&huart3,&enter1,1,10);
-//  	HAL_UART_Transmit(&huart3,&enter2,1,10);
+  	itoa(PSDL[0], Buf1, 10);
+  	SCI_OutChar('L');
+  	SCI_OutString(Buf1);
+  	HAL_UART_Transmit(&huart3,&space,1,10);
 
-	TIM3->CCR1 = PSDdiff1;
-	TIM3->CCR2 = PSDdiff2;
+  	itoa(PSDR[0], Buf2, 10);
+  	SCI_OutChar('R');
+  	SCI_OutString(Buf2);
+
+  	HAL_UART_Transmit(&huart3,&enter1,1,10);
+  	HAL_UART_Transmit(&huart3,&enter2,1,10);
+
+	//TIM3->CCR1 = PSDdiff1;
+	//TIM3->CCR2 = PSDdiff2;
+  	psd_mean_filter1();
+
+	TIM3->CCR1 = result_psd1;
+	TIM3->CCR2 = result_psd2;
+
 }
 
 /* USER CODE END 0 */
@@ -194,6 +210,25 @@ void PSD(){
   *
   * @retval None
   */
+
+void psd_mean_filter1()
+{
+
+	temp_psd1[pc] = PSDdiff1;
+	temp_psd2[pc] = PSDdiff1;
+
+	if(temp_psd1[0] && temp_psd1[1] && temp_psd1[2])
+	{
+		result_psd1 = (temp_psd1[0] + temp_psd1[1] + temp_psd1[2])/3;
+		result_psd2 = (temp_psd2[0] + temp_psd2[1] + temp_psd2[2])/3;
+	}
+
+	pc++;
+	if(pc >2)
+		pc=0;
+
+}
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -254,6 +289,7 @@ int main(void)
 
   /* USER CODE END WHILE */
     MX_USB_HOST_Process();
+    PSD();
 
   /* USER CODE BEGIN 3 */
 
