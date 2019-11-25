@@ -87,7 +87,7 @@ int norm1,norm2;
 int diff1,diff2;											            // For Normalization
 int diff_w1, diff_w2;
 int diff;
-int canRun = 0;
+//volatile int canRun = 0;
 /***************PSD Normalization********************/
 #define PSD_MIN 0
 #define PSD_MAX 900
@@ -175,25 +175,25 @@ void PSD(){
   psd_mean_filter1(); 
   
   // Calc difference
-  if(canRun){
-    diff=result_psd1 - result_psd2;
+  //if(canRun){
+	diff = 5 * (result_psd1 - result_psd2);
 
-    // Driving
-    PSDdiff1 = 550 + diff;
-    PSDdiff2 = 550 - diff;
+	// Driving
+	PSDdiff1 = 550 + diff;
+	PSDdiff2 = 550 - diff;
 
-    // Threshold motor input
-    if(PSDdiff1>1000) diff = 1000;
-    else if(PSDdiff1<500) diff = 500;
+	// Threshold motor input
+	if(PSDdiff1>1000) PSDdiff1 = 1000;
+	else if(PSDdiff1<500) PSDdiff1 = 500;
 
-    if(PSDdiff2>1000) diff = 1000;
-    else if(PSDdiff2<500) diff = 500;
+	if(PSDdiff2>1000) PSDdiff2 = 1000;
+	else if(PSDdiff2<500) PSDdiff2 = 500;
 
-    // Input PWM
-    TIM3->CCR1 = PSDdiff1;
-    TIM3->CCR2 = PSDdiff2;
+	// Input PWM
+	TIM3->CCR1 = PSDdiff1;
+	TIM3->CCR2 = PSDdiff2;
 
-  }
+  //}
 }
 
 /* USER CODE END 0 */
@@ -210,12 +210,12 @@ void psd_mean_filter1()
 	temp_psd1[pc] = PSDL[0];
 	temp_psd2[pc] = PSDR[0];
 
-	if(temp_psd1[0] && temp_psd1[1] && temp_psd1[2])
-	{
-		result_psd1 = (temp_psd1[0] + temp_psd1[1] + temp_psd1[2])/3;
-		result_psd2 = (temp_psd2[0] + temp_psd2[1] + temp_psd2[2])/3;
-    canRun = 1;
-	}
+	//if(temp_psd1[0] && temp_psd1[1] && temp_psd1[2])
+	//{
+	result_psd1 = (temp_psd1[0] + temp_psd1[1] + temp_psd1[2])/3;
+	result_psd2 = (temp_psd2[0] + temp_psd2[1] + temp_psd2[2])/3;
+	//	canRun = 1;
+	//}
 
 	pc=(pc++)%3;
 	
@@ -271,8 +271,6 @@ int main(void)
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET);
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
 
-//   TIM3->CCR1 = 550;
-//   TIM3->CCR2 = 550;
 
   /* USER CODE END 2 */
 
