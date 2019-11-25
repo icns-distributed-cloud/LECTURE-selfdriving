@@ -86,7 +86,7 @@ int n_v1, n_v2; 												// Normalized Velocity Value
 int norm1,norm2;
 int diff1,diff2;											            // For Normalization
 int diff_w1, diff_w2;
-
+int diff;
 /***************PSD Normalization********************/
 #define PSD_MIN 0
 #define PSD_MAX 900
@@ -155,8 +155,8 @@ void PSD(){
 		PSDL[0] = PSD_MAX;
 	if(PSDR[0] > PSD_MAX)
 		PSDR[0] = PSD_MAX;
-
-	SideLPSD = (float)((PSDL[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;	//PSD Side
+	diff=PSDL[0] - PSDR[0];
+	/*SideLPSD = (float)((PSDL[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;	//PSD Side
 	SideRPSD = (float)((PSDR[0] - PSD_MIN)/(PSD_MAX-PSD_MIN))*400;
 
 	PSDdiff1 = SideLPSD - SideRPSD + Default_Speed;
@@ -182,6 +182,18 @@ void PSD(){
 //
 //  	HAL_UART_Transmit(&huart3,&enter1,1,10);
 //  	HAL_UART_Transmit(&huart3,&enter2,1,10);
+
+	TIM3->CCR1 = PSDdiff1;
+	TIM3->CCR2 = PSDdiff2;*/
+
+	PSDdiff1 = 550 + diff;
+	PSDdiff2 = 550 - diff;
+
+	if(PSDdiff1>1000) diff = 1000;
+	else if(PSDdiff1<500) diff = 500;
+
+	if(PSDdiff2>1000) diff = 1000;
+	else if(PSDdiff2<500) diff = 500;
 
 	TIM3->CCR1 = PSDdiff1;
 	TIM3->CCR2 = PSDdiff2;
@@ -226,6 +238,7 @@ int main(void)
   MX_TIM3_Init();
   MX_USART3_UART_Init();
   MX_ADC1_Init();
+  diff=0;
   /* USER CODE BEGIN 2 */
 
   //Initialize for PSD
